@@ -44,7 +44,7 @@ export default function Login({ onLogin }) {
   return (
     <div style={{display:'flex', justifyContent:'center', marginTop:'100px'}}>
       <div style={{border:'1px solid #ccc', padding:'30px', borderRadius:'8px', width:'300px'}}>
-        <h2>Gal System 登录入口</h2>
+        <h2>管理员登录入口</h2>
         <input 
           placeholder="账号" 
           value={acc} 
