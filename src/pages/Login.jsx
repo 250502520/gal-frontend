@@ -1,77 +1,72 @@
 import React, { useState } from 'react';
 
-// 【极其重要！！！检查这里！】
-// 1. 必须以 https:// 开头
-// 2. 结尾千万不能有斜杠 /
-// 3. 替换成你真实的 Worker 访问地址
-const WORKER_URL = "https://gal-backend.zhangjiaqi20090126.workers.dev"; 
+// 确认你的后端地址
+const WORKER_URL = "https://gal-backend.zhangjiaqi20090126.workers.dev";
 
-export default function Login({ onLogin }) {
-  const [acc, setAcc] = useState('');
+export default function Login() {
+  // 这里定义 state 名字
+  const [acc, setAcc] = useState('intttttttt'); 
   const [pwd, setPwd] = useState('');
-  const [loading, setLoading] = useState(false); // 增加加载状态
+  const [loading, setLoading] = useState(false);
 
-  const submit = async () => {
-    if (!acc || !pwd) {
-      alert("请输入账号和密码！");
-      return;
-    }
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
     
-    setLoading(true); // 按钮变成加载中
     try {
       const res = await fetch(`${WORKER_URL}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
+        // 【关键修复】：直接使用你测试成功的 acc 和 pwd
+        body: JSON.stringify({ account: acc, password: pwd })
       });
-      
+
       const data = await res.json();
       
-      if (res.ok && data.success) {
-        localStorage.setItem('gal_token', 'ok');
-        onLogin(); // 登录成功，通知 App.jsx 放行
+      if (res.ok) {
+        localStorage.setItem('gal_token', data.token);
+        window.location.href = '/'; 
       } else {
-        alert("登录失败：" + (data.msg || "账号或密码错误"));
+        alert("登录失败：" + (data.error || "账号或密码错误"));
       }
-    } catch (error) {
-      // 如果走到这里，说明根本没连上 Worker！
-      alert("连接门卫失败！请仔细检查代码里的 WORKER_URL 是否完全正确。\n具体报错：" + error.message);
+    } catch (err) {
+      alert("连接门卫失败！报错信息：" + err.message);
     } finally {
-      setLoading(false); // 恢复按钮
+      setLoading(false);
     }
   };
 
   return (
-    <div style={{display:'flex', justifyContent:'center', marginTop:'100px'}}>
-      <div style={{border:'1px solid #ccc', padding:'30px', borderRadius:'8px', width:'300px'}}>
-        <h2>管理员登录入口</h2>
-        <input 
-          placeholder="账号" 
-          value={acc} 
-          onChange={e=>setAcc(e.target.value)} 
-          style={{display:'block', marginBottom:'10px', width:'100%', padding:'8px'}} 
-        />
-        <input 
-          type="password" 
-          placeholder="密码" 
-          value={pwd} 
-          onChange={e=>setPwd(e.target.value)} 
-          style={{display:'block', marginBottom:'20px', width:'100%', padding:'8px'}} 
-        />
-        <button 
-          onClick={submit} 
-          disabled={loading}
-          style={{
-            width:'100%', 
-            padding:'10px', 
-            background: loading ? 'gray' : 'blue', 
-            color:'white', 
-            border:'none', 
-            borderRadius:'4px',
-            cursor: loading ? 'wait' : 'pointer' /* 修复了鼠标变小手的问题！ */
-          }}>
-          {loading ? '正在验证...' : '进入系统'}
-        </button>
+    <div style={{ padding: '50px', display: 'flex', justifyContent: 'center' }}>
+      <div style={{ border: '1px solid #ddd', padding: '30px', borderRadius: '10px', width: '300px' }}>
+        <h2 style={{ textAlign: 'center' }}>管理员登录</h2>
+        <form onSubmit={handleLogin}>
+          <div style={{ marginBottom: '15px' }}>
+            <input 
+              style={{ width: '100%', padding: '8px' }}
+              type="text" 
+              value={acc} 
+              onChange={(e) => setAcc(e.target.value)} 
+              placeholder="请输入账号"
+            />
+          </div>
+          <div style={{ marginBottom: '20px' }}>
+            <input 
+              style={{ width: '100%', padding: '8px' }}
+              type="password" 
+              value={pwd} 
+              onChange={(e) => setPwd(e.target.value)} 
+              placeholder="请输入密码"
+            />
+          </div>
+          <button 
+            type="submit" 
+            disabled={loading}
+            style={{ width: '100%', padding: '10px', cursor: 'pointer' }}
+          >
+            {loading ? "正在验证..." : "登录"}
+          </button>
+        </form>
       </div>
     </div>
   );
