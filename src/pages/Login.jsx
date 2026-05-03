@@ -22,7 +22,7 @@ export default function Login({ onLogin }) {
       const res = await fetch(`${WORKER_URL}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ account: acc, password: pwd })
+        body: JSON.stringify({ username, password })
       });
       
       const data = await res.json();
