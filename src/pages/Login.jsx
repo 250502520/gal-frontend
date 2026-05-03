@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 
-// 确认你的后端地址
 const WORKER_URL = "https://gal-backend.zhangjiaqi20090126.workers.dev";
 
 export default function Login() {
-  // 这里定义 state 名字
   const [acc, setAcc] = useState('intttttttt'); 
   const [pwd, setPwd] = useState('');
   const [loading, setLoading] = useState(false);
@@ -12,62 +10,48 @@ export default function Login() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
     try {
       const res = await fetch(`${WORKER_URL}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // 【关键修复】：直接使用你测试成功的 acc 和 pwd
         body: JSON.stringify({ account: acc, password: pwd })
       });
-
       const data = await res.json();
-      
       if (res.ok) {
         localStorage.setItem('gal_token', data.token);
         window.location.href = '/'; 
       } else {
-        alert("登录失败：" + (data.error || "账号或密码错误"));
+        alert("登录失败：" + (data.error || "请检查账号密码"));
       }
     } catch (err) {
-      alert("连接门卫失败！报错信息：" + err.message);
+      alert("网络连接失败，请检查 Worker 状态");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{ padding: '50px', display: 'flex', justifyContent: 'center' }}>
-      <div style={{ border: '1px solid #ddd', padding: '30px', borderRadius: '10px', width: '300px' }}>
-        <h2 style={{ textAlign: 'center' }}>管理员登录</h2>
-        <form onSubmit={handleLogin}>
-          <div style={{ marginBottom: '15px' }}>
-            <input 
-              style={{ width: '100%', padding: '8px' }}
-              type="text" 
-              value={acc} 
-              onChange={(e) => setAcc(e.target.value)} 
-              placeholder="请输入账号"
-            />
-          </div>
-          <div style={{ marginBottom: '20px' }}>
-            <input 
-              style={{ width: '100%', padding: '8px' }}
-              type="password" 
-              value={pwd} 
-              onChange={(e) => setPwd(e.target.value)} 
-              placeholder="请输入密码"
-            />
-          </div>
-          <button 
-            type="submit" 
-            disabled={loading}
-            style={{ width: '100%', padding: '10px', cursor: 'pointer' }}
-          >
-            {loading ? "正在验证..." : "登录"}
-          </button>
-        </form>
-      </div>
+    <div style={{ display: 'flex', justifyContent: 'center', marginTop: '100px' }}>
+      <form onSubmit={handleLogin} style={{ border: '1px solid #ccc', padding: '20px', borderRadius: '8px' }}>
+        <h3>管理员登录</h3>
+        <input 
+          type="text" 
+          value={acc} 
+          onChange={(e) => setAcc(e.target.value)} 
+          placeholder="账号" 
+          style={{ display: 'block', marginBottom: '10px', padding: '8px' }}
+        />
+        <input 
+          type="password" 
+          value={pwd} 
+          onChange={(e) => setPwd(e.target.value)} 
+          placeholder="密码" 
+          style={{ display: 'block', marginBottom: '10px', padding: '8px' }}
+        />
+        <button type="submit" disabled={loading} style={{ width: '100%', padding: '10px' }}>
+          {loading ? "验证中..." : "登录"}
+        </button>
+      </form>
     </div>
   );
 }
