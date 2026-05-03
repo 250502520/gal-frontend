@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import Login from './pages/Login';
 
+// 导入刚刚创建的五个房间组件
+import Home from './pages/Home';
+import Music from './pages/Music';
+import PdfConvert from './pages/PdfConvert';
+import PdfRead from './pages/PdfRead';
+import Gallery from './pages/Gallery';
+
 function App() {
   const [isLogged, setIsLogged] = useState(false);
   const [domain, setDomain] = useState('');
@@ -12,19 +19,14 @@ function App() {
 
   if (!isLogged) return <Login onLogin={() => setIsLogged(true)} />;
 
-  // 根据你的要求，识别不同子域名
-  if (domain.startsWith('yy.')) return <div style={{padding:'20px'}}>这里是音乐播放器子站代码放置区</div>;
-  if (domain.startsWith('zh.')) return <div style={{padding:'20px'}}>这里是PDF转换器子站代码放置区</div>;
-  if (domain.startsWith('pdf.')) return <div style={{padding:'20px'}}>这里是PDF阅读器子站代码放置区</div>;
-  if (domain.startsWith('tc.')) return <div style={{padding:'20px'}}>这里是图床子站代码放置区</div>;
+  // 核心路由：通过域名的开头来判断加载哪个页面
+  if (domain.startsWith('yy.')) return <Music />;
+  if (domain.startsWith('zh.')) return <PdfConvert />;
+  if (domain.startsWith('pdf.')) return <PdfRead />;
+  if (domain.startsWith('tc.')) return <Gallery />;
   
-  // 默认 zy 主域名
-  return (
-    <div style={{padding:'20px'}}>
-      <h1>主控台 (zy.gal.us.kg)</h1>
-      <p>欢迎回来。系统正在运行中。</p>
-      <button onClick={() => { localStorage.removeItem('gal_token'); window.location.reload(); }}>退出登录</button>
-    </div>
-  );
+  // 默认主控台 zy.gal.us.kg
+  return <Home />;
 }
+
 export default App;
