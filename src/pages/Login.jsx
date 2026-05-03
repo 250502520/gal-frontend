@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 // 【极其重要】把下面这个引号里的网址，换成你在【第二步的第11小步】存到记事本里的 Worker 地址！
-const WORKER_URL = "https://gal-backend.你的用户名.workers.dev"; 
+const WORKER_URL = "https://gal-frontend.pages.dev"; 
 
 export default function Login({ onLogin }) {
   const [acc, setAcc] = useState('');
