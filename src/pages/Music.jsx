@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-const WORKER_URL = "https://https://gal-backend.zhangjiaqi20090126.workers.dev/"; 
+const WORKER_URL = "https://gal-backend.zhangjiaqi20090126.workers.dev/"; 
 
 export default function Music() {
   const [playlist, setPlaylist] = useState([]);
