@@ -1,83 +1,121 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 
-// 改为你真实的 Worker 地址，末尾不要加 /
-const WORKER_URL = "https://gal-backend.zhangjiaqi20090126.workers.dev"; 
+const WORKER_URL = "https://gal-backend.zhangjiaqi20090126.workers.dev";
 
 export default function Music() {
-  const [playlist, setPlaylist] = useState([]);
+  const [allSongs, setAllSongs] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [playMode, setPlayMode] = useState('list-loop');
+  const [currentSinger, setCurrentSinger] = useState("全部");
+  
+  // 收藏夹与自定义歌单数据（存放在本地浏览器）
+  const [favorites, setFavorites] = useState(JSON.parse(localStorage.getItem('gal_fav') || '[]'));
+  const [viewMode, setViewMode] = useState('all'); // all, fav
+
   const audioRef = useRef(null);
 
   useEffect(() => {
-    const fetchMusic = async () => {
-      try {
-        const res = await fetch(`${WORKER_URL}/api/list?type=music`);
-        const data = await res.json();
-        // 过滤出只有音频的文件
-        const musicOnly = data.filter(item => item.type === "audio");
-        setPlaylist(musicOnly);
-      } catch (err) {
-        console.error("音乐同步失败:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchMusic();
   }, []);
 
-  const playSong = (index) => {
-    setCurrentIndex(index);
-    // 延迟播放以确保 DOM 更新
-    setTimeout(() => {
-      if(audioRef.current) audioRef.current.play();
-    }, 150);
+  const fetchMusic = async () => {
+    try {
+      const res = await fetch(`${WORKER_URL}/api/list?type=music`);
+      const data = await res.json();
+      setAllSongs(data.filter(item => item.type === "audio"));
+    } catch (err) {
+      console.error("同步失败", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  if (loading) return <div style={{ padding: '50px', textAlign: 'center' }}>正在同步私有歌库...</div>;
-  if (playlist.length === 0) return <div style={{ padding: '50px', textAlign: 'center' }}>未发现有效音频文件</div>;
+  // 核心逻辑：决定当前显示的列表
+  const displayList = useMemo(() => {
+    let list = allSongs;
+    if (viewMode === 'fav') {
+      list = allSongs.filter(s => favorites.includes(s.id));
+    }
+    return list.filter(s => {
+      const matchSearch = s.filename.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchSinger = currentSinger === "全部" || s.singer === currentSinger;
+      return matchSearch && matchSinger;
+    });
+  }, [allSongs, searchQuery, currentSinger, viewMode, favorites]);
 
-  const currentSong = playlist[currentIndex];
+  // 歌手分类（根据文件夹自动生成）
+  const singers = useMemo(() => {
+    const s = new Set(allSongs.map(item => item.singer));
+    return ["全部", ...Array.from(s)];
+  }, [allSongs]);
+
+  // 切换收藏状态
+  const toggleFavorite = (id) => {
+    const newFavs = favorites.includes(id) ? favorites.filter(f => f !== id) : [...favorites, id];
+    setFavorites(newFavs);
+    localStorage.setItem('gal_fav', JSON.stringify(newFavs));
+  };
+
+  const handleNext = () => {
+    if (playMode === 'single-loop') {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play();
+    } else {
+      const nextIndex = playMode === 'random' 
+        ? Math.floor(Math.random() * displayList.length) 
+        : (currentIndex + 1) % displayList.length;
+      setCurrentIndex(nextIndex);
+    }
+  };
+
+  if (loading) return <div style={{padding: '20px'}}>正在拉取乐库...</div>;
 
   return (
-    <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto', fontFamily: 'sans-serif' }}>
-      <h2 style={{ textAlign: 'center', marginBottom: '30px' }}>🎵 个人全自动电台</h2>
-      
-      <div style={{ background: '#f9f9f9', borderRadius: '15px', padding: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-          <div style={{ fontSize: '60px' }}>📻</div>
-          <h3 style={{ margin: '10px 0' }}>{currentSong.filename}</h3>
+    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
+      {/* 1. 当前播放卡片 */}
+      <div style={{ background: '#333', color: '#fff', padding: '20px', borderRadius: '15px', marginBottom: '20px' }}>
+        <h2 style={{ margin: 0 }}>{displayList[currentIndex]?.filename.split('.')[0] || "未在播放"}</h2>
+        <p style={{ opacity: 0.7 }}>{displayList[currentIndex]?.singer || "-"}</p>
+        <audio ref={audioRef} src={displayList[currentIndex]?.url} onEnded={handleNext} controls style={{ width: '100%', marginTop: '10px' }} />
+        <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'space-between' }}>
+            <button onClick={() => setPlayMode(p => (p==='random'?'list-loop':'random'))} style={{background:'none', color:'#fff', border:'1px solid #555', padding:'4px 8px', borderRadius:'4px'}}>
+                {playMode === 'random' ? '🔀 随机' : '🔁 循环'}
+            </button>
+            <button onClick={() => toggleFavorite(displayList[currentIndex]?.id)} style={{background:'none', border:'none', fontSize:'20px', cursor:'pointer'}}>
+                {favorites.includes(displayList[currentIndex]?.id) ? '❤️' : '🤍'}
+            </button>
         </div>
+      </div>
 
-        <audio 
-          ref={audioRef} 
-          src={currentSong.url} 
-          controls 
-          style={{ width: '100%' }} 
-          onEnded={() => playSong((currentIndex + 1) % playlist.length)} 
-        />
+      {/* 2. 导航栏 */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+        <button onClick={() => setViewMode('all')} style={{ flex:1, padding:'10px', background: viewMode==='all'?'#007bff':'#eee', color: viewMode==='all'?'#fff':'#000', border:'none', borderRadius:'8px' }}>所有歌曲</button>
+        <button onClick={() => setViewMode('fav')} style={{ flex:1, padding:'10px', background: viewMode==='fav'?'#ff4757':'#eee', color: viewMode==='fav'?'#fff':'#000', border:'none', borderRadius:'8px' }}>我的收藏 ({favorites.length})</button>
+      </div>
 
-        <div style={{ marginTop: '20px', borderTop: '1px solid #eee', paddingTop: '10px' }}>
-          <p style={{ fontSize: '14px', color: '#666' }}>待播列表 ({playlist.length})：</p>
-          <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-            {playlist.map((song, idx) => (
-              <div 
-                key={song.id} 
-                onClick={() => playSong(idx)} 
-                style={{ 
-                  padding: '10px', 
-                  cursor: 'pointer', 
-                  borderRadius: '5px',
-                  background: idx === currentIndex ? '#e3f2fd' : 'transparent',
-                  color: idx === currentIndex ? '#1976d2' : '#333',
-                  marginBottom: '5px'
-                }}
-              >
-                {idx + 1}. {song.filename}
-              </div>
-            ))}
+      {/* 3. 搜索与筛选 */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+        <input placeholder="搜索内容..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ flex:1, padding:'8px', borderRadius:'5px', border:'1px solid #ddd' }} />
+        <select value={currentSinger} onChange={e => setCurrentSinger(e.target.value)} style={{ padding:'8px', borderRadius:'5px' }}>
+          {singers.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+      </div>
+
+      {/* 4. 歌曲列表 */}
+      <div style={{ background: '#fff', borderRadius: '10px', border: '1px solid #eee', overflow: 'hidden' }}>
+        {displayList.map((song, idx) => (
+          <div key={song.id} style={{ display:'flex', padding:'12px', borderBottom:'1px solid #f9f9f9', background: idx===currentIndex?'#f0f7ff':'none', alignItems:'center' }}>
+            <div onClick={() => setCurrentIndex(idx)} style={{ flex:1, cursor:'pointer' }}>
+              <div style={{ fontWeight: idx===currentIndex?'bold':'normal' }}>{song.filename.split('.')[0]}</div>
+              <div style={{ fontSize:'12px', color:'#999' }}>{song.singer}</div>
+            </div>
+            <button onClick={() => toggleFavorite(song.id)} style={{ background:'none', border:'none', cursor:'pointer' }}>
+              {favorites.includes(song.id) ? '❤️' : '🤍'}
+            </button>
           </div>
-        </div>
+        ))}
       </div>
     </div>
   );
