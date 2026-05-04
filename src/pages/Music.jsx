@@ -33,17 +33,30 @@ export default function Music() {
   };
 
   // 核心逻辑：决定当前显示的列表
-  const displayList = useMemo(() => {
-    let list = allSongs;
-    if (viewMode === 'fav') {
-      list = allSongs.filter(s => favorites.includes(s.id));
-    }
-    return list.filter(s => {
-      const matchSearch = s.filename.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchSinger = currentSinger === "全部" || s.singer === currentSinger;
-      return matchSearch && matchSinger;
-    });
-  }, [allSongs, searchQuery, currentSinger, viewMode, favorites]);
+  // 核心逻辑：决定当前显示的列表（增强搜索功能）
+const displayList = useMemo(() => {
+  let list = allSongs;
+  
+  // 1. 如果是在收藏夹视图，先过滤出收藏歌曲
+  if (viewMode === 'fav') {
+    list = allSongs.filter(s => favorites.includes(s.id));
+  }
+
+  // 2. 综合搜索：支持 歌名、歌手、甚至 路径 搜索
+  const query = searchQuery.toLowerCase().trim();
+  
+  return list.filter(s => {
+    // 检查歌手名是否包含关键词
+    const matchSinger = s.singer.toLowerCase().includes(query);
+    // 检查文件名是否包含关键词
+    const matchFilename = s.filename.toLowerCase().includes(query);
+    // 检查下拉框选中的歌手分类（精确分类）
+    const matchCategory = currentSinger === "全部" || s.singer === currentSinger;
+
+    // 逻辑：(歌名匹配 OR 歌手匹配) AND 分类匹配
+    return (matchSinger || matchFilename) && matchCategory;
+  });
+}, [allSongs, searchQuery, currentSinger, viewMode, favorites]);
 
   // 歌手分类（根据文件夹自动生成）
   const singers = useMemo(() => {
