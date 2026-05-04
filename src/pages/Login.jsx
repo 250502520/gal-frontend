@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const WORKER_URL = "https://gal-backend.zhangjiaqi20090126.workers.dev";
+const WORKER_URL = "https://api.gal.us.kg";
 
 export default function Login() {
   const [acc, setAcc] = useState('intttttttt'); 

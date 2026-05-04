@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 
-const WORKER_URL = "https://gal-backend.zhangjiaqi20090126.workers.dev";
+const WORKER_URL = "https://api.gal.us.kg";
 
 export default function Music() {
   const [allSongs, setAllSongs] = useState([]);
